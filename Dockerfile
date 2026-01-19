@@ -23,5 +23,5 @@ COPY templates/ ./templates/
 # Expose port for Render
 EXPOSE 8080
 
-# Use gunicorn for production
-CMD ["gunicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use gunicorn for production with correct syntax
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080"]
