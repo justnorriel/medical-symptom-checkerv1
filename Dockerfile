@@ -20,7 +20,7 @@ COPY app.py .
 COPY bayesian_model.py .
 COPY templates/ ./templates/
 
-# Expose port for Fly.io
+# Expose port for Render
 EXPOSE 8080
 
 # Use gunicorn for production
