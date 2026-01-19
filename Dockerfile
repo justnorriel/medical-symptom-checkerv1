@@ -20,8 +20,8 @@ COPY app.py .
 COPY bayesian_model.py .
 COPY templates/ ./templates/
 
-# Expose port
-EXPOSE 5000
+# Expose port (Cloud Run uses $PORT)
+EXPOSE 8080
 
-# Run the application
-CMD ["python", "app.py"]
+# Use gunicorn for production
+CMD ["gunicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
