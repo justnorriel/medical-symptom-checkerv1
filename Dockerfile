@@ -20,7 +20,7 @@ COPY app.py .
 COPY bayesian_model.py .
 COPY templates/ ./templates/
 
-# Expose port (Cloud Run uses $PORT)
+# Expose port for Fly.io
 EXPOSE 8080
 
 # Use gunicorn for production
