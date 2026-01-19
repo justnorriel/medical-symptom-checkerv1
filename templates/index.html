@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Symptom Checker - Bayesian Network</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+            font-size: 0.9em;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .symptoms-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #4facfe;
+            padding-bottom: 10px;
+        }
+
+        .symptoms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .symptom-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .symptom-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #4facfe;
+        }
+
+        .symptom-card.selected {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-color: #00f2fe;
+        }
+
+        .symptom-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .symptom-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .symptom-option {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .symptom-card.selected .symptom-option {
+            border-color: white;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .symptom-option.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .symptom-card.selected .symptom-option.active {
+            background: white;
+            color: #4facfe;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .results-section {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .result-disease {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .result-probability {
+            font-size: 1.5em;
+            opacity: 0.9;
+        }
+
+        .probabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .probability-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #4facfe;
+        }
+
+        .probability-disease {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .probability-value {
+            font-size: 1.2em;
+            color: #4facfe;
+            font-weight: bold;
+        }
+
+        .test-cases {
+            margin-top: 30px;
+        }
+
+        .test-case-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .test-case-btn:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #dc3545;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            
+            .symptoms-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Medical Symptom Checker</h1>
+            <p>Bayesian Network-powered Disease Diagnosis System</p>
+        </header>
+
+        <div class="disclaimer">
+            <strong>⚠️ Educational Disclaimer:</strong> This application is for educational purposes only and should not be used as a substitute for professional medical advice, diagnosis, or treatment.
+        </div>
+
+        <main>
+            <section class="symptoms-section">
+                <h2 class="section-title">📋 Select Your Symptoms</h2>
+                
+                <div class="symptoms-grid">
+                    <div class="symptom-card" data-symptom="Fever">
+                        <div class="symptom-name">🌡️ Fever</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="Cough">
+                        <div class="symptom-name">💨 Cough</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="Fatigue">
+                        <div class="symptom-name">😴 Fatigue</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="RunnyNose">
+                        <div class="symptom-name">🤧 Runny Nose</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="BodyAches">
+                        <div class="symptom-name">💪 Body Aches</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="Sneezing">
+                        <div class="symptom-name">👃 Sneezing</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="SoreThroat">
+                        <div class="symptom-name">🗣️ Sore Throat</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+
+                    <div class="symptom-card" data-symptom="Headache">
+                        <div class="symptom-name">🤕 Headache</div>
+                        <div class="symptom-options">
+                            <div class="symptom-option" data-value="No">No</div>
+                            <div class="symptom-option" data-value="Yes">Yes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="diagnose()">🔍 Diagnose</button>
+                    <button class="btn btn-secondary" onclick="clearSymptoms()">🔄 Clear</button>
+                </div>
+            </section>
+
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing symptoms with Bayesian Network...</p>
+            </div>
+
+            <div class="error" id="error-message"></div>
+
+            <section class="results-section" id="results">
+                <h2 class="section-title">📊 Diagnosis Results</h2>
+                
+                <div class="result-card">
+                    <div class="result-disease" id="most-likely-disease">-</div>
+                    <div class="result-probability" id="probability">-</div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; color: #333;">All Disease Probabilities</h3>
+                <div class="probabilities-grid" id="probabilities-grid">
+                    <!-- Probabilities will be inserted here -->
+                </div>
+            </section>
+
+            <section class="test-cases">
+                <h3 class="section-title">🧪 Test Cases</h3>
+                <p style="margin-bottom: 15px; color: #666;">Click on any test case to see how the system works:</p>
+                <div id="test-cases-container">
+                    <!-- Test cases will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Store selected symptoms
+        let selectedSymptoms = {};
+
+        // Initialize symptom cards
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click handlers to symptom cards
+            document.querySelectorAll('.symptom-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('symptom-option')) {
+                        selectSymptom(this, e.target);
+                    } else {
+                        // Toggle card selection
+                        this.classList.toggle('selected');
+                        if (!this.classList.contains('selected')) {
+                            // Clear selection if card is deselected
+                            const symptom = this.dataset.symptom;
+                            delete selectedSymptoms[symptom];
+                            this.querySelectorAll('.symptom-option').forEach(opt => {
+                                opt.classList.remove('active');
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Add click handlers to symptom options
+            document.querySelectorAll('.symptom-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const card = this.closest('.symptom-card');
+                    selectSymptom(card, this);
+                });
+            });
+
+            // Load test cases
+            loadTestCases();
+        });
+
+        function selectSymptom(card, option) {
+            const symptom = card.dataset.symptom;
+            const value = option.dataset.value;
+            
+            // Mark card as selected
+            card.classList.add('selected');
+            
+            // Clear all active options in this card
+            card.querySelectorAll('.symptom-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            
+            // Mark selected option as active
+            option.classList.add('active');
+            
+            // Store the selection
+            selectedSymptoms[symptom] = value;
+        }
+
+        function diagnose() {
+            if (Object.keys(selectedSymptoms).length === 0) {
+                showError('Please select at least one symptom');
+                return;
+            }
+
+            showLoading(true);
+            hideError();
+
+            fetch('/diagnose', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(selectedSymptoms)
+            })
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                if (data.success) {
+                    displayResults(data.result);
+                } else {
+                    showError(data.error || 'Diagnosis failed');
+                }
+            })
+            .catch(error => {
+                showLoading(false);
+                showError('Network error: ' + error.message);
+            });
+        }
+
+        function displayResults(result) {
+            document.getElementById('most-likely-disease').textContent = result.most_likely_disease;
+            document.getElementById('probability').textContent = `Confidence: ${result.probability}%`;
+            
+            const probabilitiesGrid = document.getElementById('probabilities-grid');
+            probabilitiesGrid.innerHTML = '';
+            
+            // Sort diseases by probability
+            const sortedProbabilities = Object.entries(result.all_probabilities)
+                .sort((a, b) => b[1] - a[1]);
+            
+            sortedProbabilities.forEach(([disease, probability]) => {
+                const item = document.createElement('div');
+                item.className = 'probability-item';
+                item.innerHTML = `
+                    <div class="probability-disease">${disease}</div>
+                    <div class="probability-value">${probability}%</div>
+                `;
+                probabilitiesGrid.appendChild(item);
+            });
+            
+            document.getElementById('results').classList.add('show');
+        }
+
+        function clearSymptoms() {
+            selectedSymptoms = {};
+            
+            // Clear all selections
+            document.querySelectorAll('.symptom-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            document.querySelectorAll('.symptom-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // Hide results
+            document.getElementById('results').classList.remove('show');
+            hideError();
+        }
+
+        function loadTestCases() {
+            fetch('/api/test')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const container = document.getElementById('test-cases-container');
+                    container.innerHTML = '';
+                    
+                    data.test_cases.forEach(testCase => {
+                        const button = document.createElement('button');
+                        button.className = 'test-case-btn';
+                        button.textContent = testCase.name;
+                        button.onclick = () => applyTestCase(testCase.symptoms);
+                        container.appendChild(button);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Failed to load test cases:', error);
+            });
+        }
+
+        function applyTestCase(symptoms) {
+            clearSymptoms();
+            
+            Object.entries(symptoms).forEach(([symptom, value]) => {
+                const card = document.querySelector(`[data-symptom="${symptom}"]`);
+                if (card) {
+                    const option = card.querySelector(`[data-value="${value}"]`);
+                    if (option) {
+                        selectSymptom(card, option);
+                    }
+                }
+            });
+        }
+
+        function showLoading(show) {
+            const loading = document.querySelector('.loading');
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+
+        function hideError() {
+            const errorElement = document.getElementById('error-message');
+            errorElement.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
